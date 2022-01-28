@@ -24,9 +24,8 @@ namespace fhir_cs_tutorial_01 // Note: actual namespace depends on the project n
 
             Bundle patientBundle = fhirClient.Search<Patient>(new string[] {"name=test"});
 
-            
-
             int patientNumber = 0;
+            
             List<string> patientsWithEncounters = new List<string>();
 
             while (patientBundle != null) {
@@ -37,29 +36,44 @@ namespace fhir_cs_tutorial_01 // Note: actual namespace depends on the project n
                 foreach (Bundle.EntryComponent entry in patientBundle.Entry)
                 {
                     
-                    System.Console.WriteLine($"- Entry: {patientNumber,3}: {entry.FullUrl}");
-
                     if (entry.Resource != null)
                     {
                         Patient patient = (Patient)entry.Resource;
-                        System.Console.WriteLine($" - ID: {patient.Id,20}");
 
+                        Bundle encounterBundle = fhirClient.Search<Encounter>(
+                            new string[]
+                            {
+                                $"patient=Patient/{patient.Id}"
+                            });
+
+                        if(encounterBundle.Total == 0) {
+                            continue;
+                        }
+
+                        patientsWithEncounters.Add(patient.Id);
+
+                        System.Console.WriteLine($"- Entry: {patientNumber,3}: {entry.FullUrl}");
+                        System.Console.WriteLine($" - ID: {patient.Id}");
+                        
                         if (patient.Name.Count > 0)
                         {
                             System.Console.WriteLine($" - Name: {patient.Name[0].ToString()}");
                         }
 
-                        Bundle encounterBundle = fhirClient.Search<Encounter>(new string[]{$"patient=Patient/{patient.Id}"});
-
-                        if(encounterBundle.Total == 0) {
-                            continue;
-                        }
-                        patientsWithEncounters.Add(patient.Id);
-
                         System.Console.WriteLine($"Total: {encounterBundle.Total} Entry Count: {encounterBundle.Entry.Count()}");
                     }
 
                     patientNumber++;
+
+                    if (patientsWithEncounters.Count >= 2)
+                    {
+                        break;
+                    }
+                }
+
+                if (patientsWithEncounters.Count >= 2)
+                {
+                    break;
                 }
 
                 // Get more results
